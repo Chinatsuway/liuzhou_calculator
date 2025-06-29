@@ -88,7 +88,7 @@ def StructureCharacter():
                 skill_info = skill_dict[skill_name]
                 character_skills_array.append({
                     "技能名": skill_info.get("技能名称", "未知"),
-                    "初始化": skill_info.get("初始化", "未知"),
+                    "初始化": skill_info.get("初始化", "无"),
                     "条件": skill_info.get("条件", "无"),
                     "效果": skill_info.get("效果", "无")
                 })
