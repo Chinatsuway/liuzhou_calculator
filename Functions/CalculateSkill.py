@@ -108,37 +108,42 @@ def _get_operand_value(operand, variables):
 
 def apply_effect(effect_str, variables):
     """
-    应用效果表达式到变量集
+    应用效果表达式到变量集，支持多个效果表达式用"与"连接
     
     参数:
-        effect_str (str): 效果表达式字符串
+        effect_str (str): 效果表达式字符串（可能包含多个用"与"连接的表达式）
         variables (dict): 变量字典
         
     返回:
         dict: 更新后的变量字典
-        
-    异常:
-        ValueError: 如果表达式中使用了未定义的变量
     """
     if effect_str == "无":
         return variables
     
-    # 分割效果表达式
-    parts = effect_str.split('=', 1)
-    if len(parts) != 2:
-        raise ValueError(f"无效的效果表达式: {effect_str}")
+    # 分割多个效果表达式（以"与"为分隔符）
+    effect_list = re.split(r'\s*与\s*', effect_str)
     
-    target_var = parts[0].strip()
-    expression = parts[1].strip()
-    
-    # 计算表达式值 - 这里会检查所有使用的变量是否已定义
-    result = _evaluate_expression(expression, variables)
-    
-    # 更新变量，并检查该变量是否存在
-    if target_var not in variables:
-        raise ValueError(f"未定义的变量 '{target_var}' 在表达式中使用: {effect_str}")
-    else:
+    # 依次处理每个效果表达式
+    for effect in effect_list:
+        if not effect.strip():
+            continue  # 跳过空表达式
+            
+        # 分割效果表达式
+        parts = effect.split('=', 1)
+        if len(parts) != 2:
+            raise ValueError(f"无效的效果表达式: {effect}")
+        
+        target_var = parts[0].strip()
+        expression = parts[1].strip()
+        
+        # 计算表达式值
+        result = _evaluate_expression(expression, variables)
+        
+        # 更新变量（要求变量必须已存在）
+        if target_var not in variables:
+            raise ValueError(f"未定义的变量 '{target_var}' 在表达式中使用: {effect}")
         variables[target_var] = result
+    
     return variables
 
 def _evaluate_expression(expr, variables):
