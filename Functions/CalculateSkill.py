@@ -1,4 +1,5 @@
 import re
+import random
 
 def evaluate_condition(condition_str, variables):
     """
@@ -115,6 +116,9 @@ def apply_effect(effect_str, variables):
         
     返回:
         dict: 更新后的变量字典
+        
+    异常:
+        ValueError: 如果表达式中使用了未定义的变量
     """
     if effect_str == "无":
         return variables
@@ -127,16 +131,19 @@ def apply_effect(effect_str, variables):
     target_var = parts[0].strip()
     expression = parts[1].strip()
     
-    # 计算表达式值
+    # 计算表达式值 - 这里会检查所有使用的变量是否已定义
     result = _evaluate_expression(expression, variables)
     
-    # 更新变量
-    variables[target_var] = result
+    # 更新变量，并检查该变量是否存在
+    if target_var not in variables:
+        raise ValueError(f"未定义的变量 '{target_var}' 在表达式中使用: {effect_str}")
+    else:
+        variables[target_var] = result
     return variables
 
 def _evaluate_expression(expr, variables):
     """
-    计算表达式的值
+    计算表达式的值，严格检查变量是否已定义
     
     参数:
         expr (str): 表达式字符串
@@ -144,8 +151,10 @@ def _evaluate_expression(expr, variables):
         
     返回:
         int/float: 表达式计算结果
+        
+    异常:
+        ValueError: 如果表达式中使用了未定义的变量
     """
-    # 安全地评估数学表达式
     # 创建安全的评估环境
     safe_env = {
         '__builtins__': None,
@@ -153,11 +162,23 @@ def _evaluate_expression(expr, variables):
         'min': min,
         'max': max,
         'round': round,
-        'sum': sum
+        'sum': sum,
+        'random': random
     }
     
     # 添加当前变量到安全环境
     safe_env.update(variables)
+    
+    # 检查表达式中使用的所有变量是否已定义
+    var_pattern = r'[a-zA-Z_][a-zA-Z0-9_]*'
+    for var_name in set(re.findall(var_pattern, expr)):
+        # 排除骰点表达式（如2d6）和数字
+        if var_name in ['d', 'D'] or var_name.isdigit():
+            continue
+            
+        # 检查变量是否已定义（包括在安全环境中的内置函数）
+        if var_name not in variables and var_name not in safe_env:
+            raise ValueError(f"未定义的变量 '{var_name}' 在表达式中使用: {expr}")
     
     # 转换骰点表达式为可执行格式
     expr = re.sub(r'(\d+)d(\d+)', r'sum(random.randint(1, \2) for _ in range(\1))', expr)
@@ -170,19 +191,35 @@ def _evaluate_expression(expr, variables):
 
 def apply_skill(skill, variables):
     """
-    应用技能效果到变量集
-    
     参数:
-        skill (dict): 技能字典
+        skill (dict): 技能字典，包含"初始化"、"条件"和"效果"键
         variables (dict): 变量字典
         
     返回:
         dict: 更新后的变量字典
     """
+    # 处理初始化表达式
+    init_expr = skill.get("初始化", "无")
+    if init_expr != "无":
+        # 分割初始化表达式
+        parts = init_expr.split('=', 1)
+        if len(parts) != 2:
+            raise ValueError(f"无效的初始化表达式: {init_expr}")
+        
+        target_var = parts[0].strip()
+        expression = parts[1].strip()
+        
+        # 只有当变量不存在时才进行初始化
+        if target_var not in variables:
+            # 计算表达式值
+            result = _evaluate_expression(expression, variables)
+            # 创建新变量
+            variables[target_var] = result
+    
+    # 检查条件是否满足
     condition = skill.get("条件", "无")
     effect = skill.get("效果", "无")
     
-    # 检查条件是否满足
     if evaluate_condition(condition, variables):
         # 应用效果
         return apply_effect(effect, variables)

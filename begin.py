@@ -12,6 +12,7 @@ def main():
     variables = {
         "骰点": 1,
         "回合": 2,
+        "加值": 0
     }
 
     print(apply_character_skills(result,"燕丹",variables))
