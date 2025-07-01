@@ -81,7 +81,7 @@ def interactive_simulation():
         
         elif choice == "4":
             # 退出
-            print("再见!关注六州喵关注六州谢谢喵")
+            print("关注六州喵关注六州谢谢喵")
             break
         
         else:

@@ -224,6 +224,8 @@ def apply_skill(skill, variables):
     # 检查条件是否满足
     condition = skill.get("条件", "无")
     effect = skill.get("效果", "无")
+
+    print({skill.get("优先级",0)},{skill.get("序号",0)})
     
     if evaluate_condition(condition, variables):
         # 应用效果
